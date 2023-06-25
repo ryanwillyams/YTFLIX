@@ -1,141 +1,117 @@
 //DARK MODE
-var checkBox = document.querySelector('.uk-checkbox');
-var body = document.body.style;
-var nav = document.querySelector('nav').style;
-function meta(y) {
-  return document.querySelector('meta[name="theme-color"]').setAttribute("content", y),body.backgroundColor = nav.backgroundColor = y;
+const checkBox = document.getElementById('checkbox');
+
+function theme(navColor, bodyColor) {
+	document.getElementById('tabColor').setAttribute("content", navColor);
+	document.getElementById('nav').style.backgroundColor = navColor;
+	document.body.style.backgroundColor = bodyColor;
 }
 
 //prefers color scheme
-let colorSchemeQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+let colorSchemeQueryList = matchMedia('(prefers-color-scheme: dark)');
 
 const setColorScheme = e => {
-  if (e.matches) {
-
-    meta("#1f1f1f");
-    body.backgroundColor = "#121212";
-    checkBox.checked = true;
-  } else {
-    meta("crimson");
-    body.backgroundColor = "white";
-    checkBox.checked = false;
-  }
+	if (e.matches) {
+		theme("#1f1f1f", "#121212");
+		checkBox.checked = true;
+	} else {
+		theme("#ff4548", "white");
+		checkBox.checked = false;
+	}
 }
 
 setColorScheme(colorSchemeQueryList);
 colorSchemeQueryList.addListener(setColorScheme);
 
 //local storage
-if (window.localStorage.getItem('data-theme') == "#1f1f1f"){
-  window.localStorage.setItem('data-theme', "#1f1f1f");
-  meta("#1f1f1f");
-  body.backgroundColor="#121212"; 
-  checkBox.checked = true;
+if (localStorage.getItem('data-theme')) {
+	theme("#1f1f1f", "#121212");
+	checkBox.checked = true;
 }
-checkBox.onclick=function() {
-  if (checkBox.checked==true) {
-    window.localStorage.setItem('data-theme', "#1f1f1f");
-    meta("#1f1f1f");
-    body.backgroundColor="#121212"; 
-  }else{
-    window.localStorage.setItem('data-theme', "crimson");
-    meta("crimson");
-    body.backgroundColor="white";
-  }
-}
+checkBox.addEventListener('click', () => {
+	if (checkBox.checked) {
+		localStorage.setItem('data-theme', "#1f1f1f");
+		theme("#1f1f1f", "#121212");
+	} else {
+		localStorage.clear();
+		theme("#ff4548", "white");
+	}
+});
 
 //SEARCH
-const search = document.querySelector(".uk-search-input");
-search.onkeyup=function(){
-  let input = search.value;
-  input=input.toLowerCase();
-  let x = document.querySelectorAll('li');
-  for (i = 0; i < x.length; i++) {
-    if (!x[i].innerHTML.toLowerCase().includes(input)) {
-      x[i].style.display="none";
-    }else {
-      x[i].style.display="list-item";
-    }
-  }
-}
+const search = document.getElementById("search_input");
+const categories = document.getElementsByClassName('uk-card');
+const search_list = document.getElementsByTagName('li');
 
-//FETCH DATA
-function parse(Y){
-return fetch("../Databases/"+Y+".json").then(function (response) {
-      return response.json();
-    }).then(function (data) {
-      appendData(data);
-    }).catch(function (err) {
-      console.log('error: ' + err);
-    });;
+document.getElementById('search_button').onclick = () => {
+	for (const i of categories) {
+		if (i.nextElementSibling.classList.contains('hide'))
+			i.click();
+		i.classList.add('hide');
+	}
 }
-
-var addlist = document.querySelectorAll('.uk-list');
-
-//Click Detection
-var countO=countA=countE=countH=0;
-
-var li = document.querySelectorAll('li');
-
-li[0].onclick=function(){
-  if(countO%2==0){
-    countO++;
-    a = 0;
-    parse('Originals');
-  }
-  else{
-    countO--;
-    while (addlist[0].hasChildNodes()) {
-      addlist[0].removeChild(addlist[0].firstChild);
-    }
-  }
+document.getElementsByClassName('uk-navbar-toggle')[0].onclick = () => {
+	search.value = '';
+	for (const li of search_list) li.style.display = 'list-item';
+	for (const i of categories) {
+		i.click();
+		i.classList.remove('hide');
+	}
 }
-li[1].onclick = function() {
-  if (countA % 2 == 0) {
-    countA++;
-    a = 1;
-    parse('Anime');
-  }
-  else {
-    countA--;
-    while (addlist[1].hasChildNodes()) {
-      addlist[1].removeChild(addlist[1].firstChild);
-    }
-  }
-}
-li[2].onclick = function() {
-  if (countE % 2 == 0) {
-    countE++;
-    a = 2;
-    parse('English');
-  }
-  else {
-    countE--;
-    while (addlist[2].hasChildNodes()) {
-      addlist[2].removeChild(addlist[2].firstChild);
-    }
-  }
-}
-li[3].onclick = function() {
-  if (countH % 2 == 0) {
-    countH++;
-    a = 3;
-    parse('Hindi');
-  }
-  else {
-    countH--;
-    while (addlist[3].hasChildNodes()) {
-      addlist[3].removeChild(addlist[3].firstChild);
-    }
-  }
-}
+search.addEventListener('keyup', () => {
+	for (const x of search_list)
+		x.style.display = !x.textContent.toLowerCase().includes(search.value.toLowerCase()) ?
+		"none" :
+		"list-item";
+});
 
-//Loading the list
 
-function appendData(data) {
- for (var i = 0; i < data.length; i++) {
-    var list = document.createElement("li");
-    list.innerHTML ='<a href=\"https://youtube.com/'+data[i].URL+'\">'+data[i].Name +'</a>';
-    addlist[a].appendChild(list);
- }
-}
+
+// DATA INJECTION
+
+
+fetch('https://raw.githubusercontent.com/wiki/n-ce/YTFLIX/Home.md')
+	.then(res => res.text())
+	.then(homeMD => JSON.parse(homeMD.slice(3)))
+	.then(homeData => {
+		for (const category of homeData) {
+
+			fetch(`https://raw.githubusercontent.com/wiki/n-ce/YTFLIX/${category.name}.md`)
+				.then(res => res.text())
+				.then(categoryMD => JSON.parse(categoryMD.slice(3)))
+				.then(categoryJSON => {
+
+					const h3 = document.createElement('h3');
+					h3.classList.add("uk-card-title", "uk-text-bolder");
+					h3.textContent = category.name;
+
+					const p = document.createElement('p');
+					p.id = 'text';
+					p.textContent = category.description;
+
+					const a = document.createElement('a');
+					a.classList.add("uk-accordion-title", "uk-card", "uk-card-hover", "uk-card-body", "uk-background-cover", "uk-card-secondary");
+					a.dataset.src = category.thumbnail;
+					a.setAttribute('uk-img', '');
+					a.append(h3, p);
+
+					const ul = document.createElement('ul');
+					ul.id = category.name;
+					ul.classList.add("uk-accordion-content", "uk-list", "uk-list-large", "uk-list-divider", "hide")
+					for (const object of categoryJSON) {
+						const list = document.createElement('li');
+						const anchor = document.createElement('a');
+						anchor.href = "https://youtube.com/" + object.URL;
+						anchor.textContent = object.Name;
+						list.appendChild(anchor);
+						ul.appendChild(list);
+					}
+
+					const li = document.createElement('li');
+					li.append(a, ul);
+					li.setAttribute('onclick', `document.getElementById('${category.name}').classList.toggle("hide")`);
+
+					document.getElementById('container').appendChild(li);
+				})
+		}
+	});
